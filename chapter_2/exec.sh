@@ -2,6 +2,7 @@
 # 以下命令仅做参考，不对产生任何的负面结果负责
 
 # 更新系统镜像源
+# 在所有节点的/etc/hosts 添加各个节点的ip映射
 wget -O /etc/yum.repos.d/epel.repo http://mirrors.aliyun.com/repo/epel-7.repo
 yum clean all
 yum makecache
@@ -29,9 +30,7 @@ EOF
 # 关闭selinux
 # vim /etc/selinux/conf
 # 设置SELINUX=disabled
-
-# 生效
-sysctl -p
+sed -i '7c SELINUX=disabled' /etc/selinux/config
 
 # 添加k8s软件源
 cat > /etc/yum.repos.d/k8s.repo <<EOF
@@ -50,6 +49,9 @@ yum install kubelet-1.14.0 kubeadm-1.14.0  kubectl-1.14.0 --disableexcludes=kube
 
 systemctl start docker && systemctl enable docker && systemctl start kubelet && systemctl enable kubelet
 
+# 生效
+sysctl -p
+
 kubeadm config print init-defaults
 
 kubeadm config print init-defaults > init.default.yaml
@@ -67,6 +69,9 @@ cp init.default.yaml init-default.yaml
 # 从配置文件创建k8s
 # 如果出现错误使用kubeadm reset撤销
 kubeadm config images pull --config=init-default.yaml
+
+kubeadm init --config init-default.yaml
+
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
